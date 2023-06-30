@@ -23,7 +23,7 @@
 # |       If this is the case, right-click on the script, and press "Run with PowerShell"         |
 # -------------------------------------------------------------------------------------------------
 
-$version = "0.1.1"
+$version = "0.1.2"
 $versiondate = "23.06.30"
 $versionfull = "$version-$versiondate" # M.P.B-YY.MM.DD (Major.Patch.Bugfix-Year.Month.Day)
 $repositoryUrl = "https://github.com/FreemoX/OokamiKunTV-LANjoiner" # GitHub repository URL
@@ -51,9 +51,9 @@ function Show-Menu {
     Write-Host "Q. Exit script"
     Write-Host "0. About this script"
     Write-Host "1. Full Setup"
-    Write-Host "2. Partial Setup"
-	Write-Host "3. Repair Setup"
-	Write-Host "T. Test Function"
+    # Write-Host "2. Partial Setup"
+	# Write-Host "3. Repair Setup"
+	# Write-Host "T. Test Function"
     $choice = Read-Host "Enter your choice"
 
     switch ($choice) {
@@ -336,13 +336,11 @@ function CheckInstalled($software) {
 # Initial script setup
 function InitialSetup {
 	# Retrieve the releases information from the GitHub API
-	$latestRelease = Invoke-RestMethod -Uri "$repositoryApiUrl/releases"
+	$releases = Invoke-RestMethod -Uri "$repositoryApiUrl/releases"
+	$latestRelease = $releases[0].tag_name
 
 	# Extract the latest version and release date from the release information
-	$latestVersion = ($latestRelease | Select-Object -First 1).tag_name
-	$latestVersion = $latestRelease.tag_name -replace '^[Vv]| pre-release$'
-	$latestVersionDate = $latestVersion -replace '^.*-'
-	$latestVersion = $latestVersion -replace "-$latestVersionDate$"
+	$latestVersion = $latestRelease -replace '^[Vv]| pre-release$'
 
 	# Compare the current version with the latest version
 	if ($latestVersion -gt $version) {
@@ -366,11 +364,35 @@ function InitialSetup {
 		Write-Host "Unless you're OokamiKunTV, I'm not sure how unless you manually"
 		Write-Host "changed the script version yourself, which you SHOULD NOT DO!"
 		Write-Host ""
-		Write-Host "Current version: $version"
-		Write-Host "Latest version: $latestVersion"
-		Write-Host "Latest release: $latestRelease"
-		Write-Host "The latest release was released: $latestVersionDate"
-		Read-Host "Anyway, press ENTER to continue, or 'CTRL+C' to exit the script"
+		Write-Host "Current version: v$version"
+		Write-Host "Latest version:  v$latestVersion"
+		Write-Host ""
+		Write-Host "Q.  Exit LANjoiner"
+		Write-Host "F.  Force update to v$latestVersion"
+		Write-Host "P.  Proceed without updating (default)"
+		$reply = Read-Host "How would you like to proceed?"
+		switch ($reply) {
+			"Q" {
+				Write-Host "OK, exiting LANjoiner"
+				Start-Sleep 2
+				exit
+			}
+			"F" {
+				Write-Host "OK, force-updating to version v$latestVersion"
+				Start-Sleep 2
+				Invoke-WebRequest -Uri $latestVersionURL -OutFile "LANjoiner-v$latestVersion.ps1"
+				Write-Host "Update completed."
+				Start-Sleep 2
+				Write-Host "Please run the new version of the script"
+				Write-Host "Don't forget to delete the old version"
+				Read-Host "Press ENTER to close LANjoiner"
+				exit
+			}
+			default {
+				Write-Host "OK, proceeding without updating"
+				Start-Sleep 2
+			}
+		}
 	} elseif ($latestVersion -eq $version) {
 		Write-Host "You have the latest version: $version"
 	} else {
